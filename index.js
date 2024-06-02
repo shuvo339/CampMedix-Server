@@ -70,6 +70,15 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/popular-camps', async(req,res)=>{
+      const options = {
+        // Sort returned documents in ascending order by title (A->Z)
+        sort: { participant: -1 },
+      };
+      const result = await campsCollection.find({}, options).toArray();
+      res.send(result)
+    })
+
     app.get('/camps/:id', async(req,res)=>{
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
