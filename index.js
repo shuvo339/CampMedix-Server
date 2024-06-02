@@ -71,6 +71,11 @@ async function run() {
       res.send(result)
     })
   
+    app.post('/camps', async(req,res)=>{
+      const camp = req.body;
+      const result = await campsCollection.insertOne(camp);
+      res.send(result); 
+    })
 
 
     // Send a ping to confirm a successful connection
