@@ -60,7 +60,6 @@ async function run() {
     app.get('/camps', async(req,res)=>{
       const search = req.query.search || '';
       const sort = req.query.sort || 'fees';
-      console.log(search);
       const query = search ? { campName: { $regex: search, $options: 'i' } } : {}
       const options = {
         // Sort returned documents in ascending order by title (A->Z)
