@@ -70,6 +70,13 @@ async function run() {
       const result = await campsCollection.find().toArray();
       res.send(result)
     })
+
+    app.get('/camps/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await campsCollection.findOne(query);
+      res.send(result)
+    })
   
     app.post('/camps', async(req,res)=>{
       const camp = req.body;
