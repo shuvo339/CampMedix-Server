@@ -151,6 +151,12 @@ async function run() {
     // })
 
     // registration related api 
+    app.post('/register', async(req,res)=>{
+      const registrationData = req.body;
+      const result = await registrationsCollection.insertOne(registrationData);
+      res.send(result);
+    })
+
 
 
     // Send a ping to confirm a successful connection
