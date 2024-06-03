@@ -151,6 +151,17 @@ async function run() {
     // })
 
     // registration related api 
+    
+    app.get('/register', async(req,res)=>{
+      const email = req.query.email;
+      let query = {};
+      if(email){
+        query = {participantEmail: email}
+      }
+      const result = await registrationsCollection.find(query).toArray();
+      res.send(result); 
+    })
+
     app.post('/register', async(req,res)=>{
       const registrationData = req.body;
       const result = await registrationsCollection.insertOne(registrationData);
