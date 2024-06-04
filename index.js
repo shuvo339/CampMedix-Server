@@ -11,6 +11,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "https://campmedix.web.app",
+      "https://campmedix.firebaseapp.com"
     ],
     credentials: true,
   })
@@ -121,7 +123,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/camps/:id', async(req,res)=>{
+    app.get('/camp/:id', async(req,res)=>{
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await campsCollection.findOne(query);
@@ -131,6 +133,27 @@ async function run() {
     app.post('/camps', async(req,res)=>{
       const camp = req.body;
       const result = await campsCollection.insertOne(camp);
+      res.send(result); 
+    })
+
+    app.delete('/camp/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await campsCollection.deleteOne(query);
+      res.send(result); 
+    })
+
+    app.put('/camp/:id', async(req,res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const camp = req.body;
+      const options = { upsert: true };
+      const updateDoc= {
+        $set: {
+          ...camp
+        },
+      };
+      const result = await campsCollection.updateOne(filter, updateDoc, options);
       res.send(result); 
     })
 
