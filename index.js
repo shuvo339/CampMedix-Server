@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const jwt = require('jsonwebtoken')
 const app = express();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 app.use(
@@ -35,12 +36,13 @@ async function run() {
     const campsCollection = client.db('campsDB').collection('camps');
     const usersCollection = client.db('campsDB').collection('users');
     const registrationsCollection = client.db('campsDB').collection('registrations');
+    const feedbackCollection = client.db('campsDB').collection('feedback');
+    const paymentCollection = client.db('campsDB').collection('payments');
 
         //jwt related api
     app.post('/jwt', async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-      console.log('token test', token );
       res.send({ token })
     })
 
@@ -67,18 +69,13 @@ async function run() {
       const query = { email: user?.email }
       // check if user already exists in db
       const isExist = await usersCollection.findOne(query)
-      // if (isExist) {
-      //   if (user.status === 'Requested') {
-      //     // if existing user try to change his role
-      //     const result = await usersCollection.updateOne(query, {
-      //       $set: { status: user?.status },
-      //     })
-      //     return res.send(result)
-      //   } else {
-      //     // if existing user login again
-      //     return res.send(isExist)
-      //   }
-      // }
+      if (isExist) {
+          // if existing user try to change his role
+          const result = await usersCollection.updateOne(query, {
+            $set: { status: user?.status },
+          })
+          return res.send(result)
+      }
 
       // save user for the first time
       const options = { upsert: true }
@@ -92,8 +89,10 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users', async(req,res)=>{
-      const result = await usersCollection.find().toArray();
+    app.get('/user', async(req,res)=>{
+      const email = req.query.email;
+      const query = { email:email }
+      const result = await usersCollection.findOne(query)
       res.send(result)
     })
 
@@ -151,8 +150,13 @@ async function run() {
     // })
 
     // registration related api 
-    
-    app.get('/register', async(req,res)=>{
+    app.post('/register', async(req,res)=>{
+      const registrationData = req.body;
+      const result = await registrationsCollection.insertOne(registrationData);
+      res.send(result);
+    })
+
+     app.get('/register', async(req,res)=>{
       const email = req.query.email;
       let query = {};
       if(email){
@@ -162,10 +166,11 @@ async function run() {
       res.send(result); 
     })
 
-    app.post('/register', async(req,res)=>{
-      const registrationData = req.body;
-      const result = await registrationsCollection.insertOne(registrationData);
-      res.send(result);
+     app.get('/register/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await registrationsCollection.findOne(query);
+      res.send(result); 
     })
 
     app.delete('/register/:id', async(req,res)=>{
@@ -175,6 +180,19 @@ async function run() {
       res.send(result); 
     })
 
+    // feedback related api 
+    app.get('/feedback', async(req,res)=>{
+      const result = await feedbackCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.post('/feedback', async(req,res)=>{
+      const feedback = req.body;
+      const result = await feedbackCollection.insertOne(feedback);
+      res.send(result); 
+    })
+
+   
 
 
     // Send a ping to confirm a successful connection
