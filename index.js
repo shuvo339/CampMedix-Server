@@ -209,6 +209,13 @@ async function run() {
     });
 
 
+   
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+
+      res.send(paymentResult);
+    })
 
 
 
