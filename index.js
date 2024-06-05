@@ -188,6 +188,15 @@ async function run() {
       const result = await registrationsCollection.find(query).toArray();
       res.send(result); 
     })
+     app.get('/registers', async(req,res)=>{
+      const email = req.query.email;
+      let query = {};
+      if(email){
+        query = {organizerEmail: email}
+      }
+      const result = await registrationsCollection.find(query).toArray();
+      res.send(result); 
+    })
 
      app.get('/register/:id', async(req,res)=>{
       const id = req.params.id;
@@ -195,6 +204,30 @@ async function run() {
       const result = await registrationsCollection.findOne(query);
       res.send(result); 
     })
+    app.patch('/register/:id', async (req, res) => {
+      const id = req.params.id
+      const paymentStatus = req.body.paymentStatus;
+      const query = { _id: new ObjectId(id) }
+      const status = req.body.status;
+      if(paymentStatus){
+        const updateDoc = {
+          $set: { 
+            paymentStatus: paymentStatus,
+          },
+        }
+        const result = await registrationsCollection.updateOne(query, updateDoc)
+        res.send(result)
+      }
+    else{
+      const updateDoc = {
+        $set: { 
+          status: status,
+        },
+      } 
+      const result = await registrationsCollection.updateOne(query, updateDoc)
+      res.send(result)
+    }
+  })
 
     app.delete('/register/:id', async(req,res)=>{
       const id = req.params.id;
@@ -202,6 +235,7 @@ async function run() {
       const result = await registrationsCollection.deleteOne(query);
       res.send(result); 
     })
+    
 
     // feedback related api 
     app.get('/feedback', async(req,res)=>{
@@ -247,6 +281,17 @@ async function run() {
       res.send(paymentResult);
     })
 
+    app.patch('/paymentinfo/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: { 
+          status: "Confirmed",
+        },
+      }
+      const result = await paymentCollection.updateOne(query, updateDoc)
+      res.send(result)
+  })
 
 
     // Send a ping to confirm a successful connection
