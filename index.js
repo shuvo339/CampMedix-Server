@@ -158,37 +158,22 @@ async function run() {
       res.send(result)
     })
 
-    // app.put('/camp/:id', async(req,res)=>{
-    //   const id = req.params.id;
-    //   const filter = {_id: new ObjectId(id)};
-    //   const camp = req.body;
-    //   const options = { upsert: true };
-    //   const updateDoc= {
-    //     $set: {
-    //       ...camp
-    //     },
-    //   };
-    //   const result = await campsCollection.updateOne(filter, updateDoc, options);
-    //   res.send(result); 
-    // })
-
 
     app.patch('/participant/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
-    
-      // Use the $inc operator to increment the participant field by 1
-      const updateDoc = { $inc: { participant: 1 } };
-    
-      try {
+      const participantValue = req.body;
+      console.log(participantValue.participantCount)
+      const updateDoc= {
+            $set: {
+               participant: participantValue.participantCount,
+             },
+            }
+   
         const result = await campsCollection.updateOne(filter, updateDoc);
         res.send(result);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({ error: 'An error occurred while updating the participant count.' });
-      }
-    });
-
+      
+    })
 
     // registration related api 
     app.post('/register', async(req,res)=>{
