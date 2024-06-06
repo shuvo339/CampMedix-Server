@@ -207,6 +207,8 @@ async function run() {
       const result = await registrationsCollection.findOne(query);
       res.send(result); 
     })
+
+
     app.patch('/register/:id', async (req, res) => {
       const id = req.params.id
       const paymentStatus = req.body.paymentStatus;
@@ -286,12 +288,13 @@ async function run() {
 
     app.patch('/paymentinfo/:id', async (req, res) => {
       const id = req.params.id
-      const query = { _id: new ObjectId(id) }
+      const status = req.body.status;
+      const query = { registerId: id }
       const updateDoc = {
         $set: { 
-          status: "Confirmed",
+          status: status,
         },
-      }
+      } 
       const result = await paymentCollection.updateOne(query, updateDoc)
       res.send(result)
   })
