@@ -93,25 +93,27 @@ async function run() {
       res.send(result)
     })
 
-
-    //camps related api
-    app.get('/camps', async(req,res)=>{
+    app.get('/camps', async (req, res) => {
       const search = req.query.search || '';
-      const sort = req.query.sort || 'fees';
-      const query = search ? { campName: { $regex: search, $options: 'i' } } : {}
-      const options = {
-        // Sort returned documents in ascending order by title (A->Z)
-        sort: { [sort]: 1 },
-        
-      };
-      const result = await campsCollection.find().toArray();
-      res.send(result)
-    })
+      const sort = req.query.sort || '';
+      const query = search ? { campName: { $regex: search, $options: 'i' } } : {};
+    
+      let sortOption = {};
+      if (sort) {
+        sortOption[sort] = 1; 
+      }
+      try {
+        const result = await campsCollection.find(query).sort(sortOption).toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: 'Error fetching camps', error });
+      }
+    });
 
     app.get('/popular-camps', async(req,res)=>{
       const options = {
         // Sort returned documents in ascending order by title (A->Z)
-        sort: { participant: -1 },
+        sort: { participant: 1 },
       };
       const result = await campsCollection.find({}, options).toArray();
       res.send(result)
