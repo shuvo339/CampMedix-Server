@@ -65,21 +65,17 @@ async function run() {
     
 
     //user role entry related api
-  app.put('/user', async (req, res) => {
+  app.post('/user', async (req, res) => {
       const user = req.body
 
       const query = { email: user?.email }
       // check if user already exists in db
       const isExist = await usersCollection.findOne(query)
       if (isExist) {
-          // if existing user try to change his role
-          const result = await usersCollection.updateOne(query, {
-            $set: { status: user?.status },
-          })
-          return res.send(result)
+          return res.send(isExist)
       }
 
-      // save user for the first time
+      // save new user 
       const options = { upsert: true }
       const updateDoc = {
         $set: {
@@ -91,13 +87,11 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/user', async(req,res)=>{
-      const email = req.query.email;
-      const query = { email:email }
-      const result = await usersCollection.findOne(query)
+    app.get('/user/:email', async (req, res) => {
+      const email = req.params.email
+      const result = await usersCollection.findOne({ email })
       res.send(result)
     })
-
 
 
     //camps related api
@@ -143,34 +137,58 @@ async function run() {
       res.send(result); 
     })
 
-    app.put('/camp/:id', async(req,res)=>{
-      const id = req.params.id;
-      const filter = {_id: new ObjectId(id)};
-      const camp = req.body;
-      const options = { upsert: true };
-      const updateDoc= {
+    app.put('/camp/update/:id', async (req, res) => {
+      const id = req.params.id
+      const campData = req.body
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
         $set: {
-          ...camp
-        },
-      };
-      const result = await campsCollection.updateOne(filter, updateDoc, options);
-      res.send(result); 
+          campName: campData.campName,
+          fees: campData.fees,
+          date: campData.date,
+          location: campData.location,
+          opinion: campData.opinion,
+          photo: campData.photo,
+          professionalName: campData.professionalName,
+          participant: campData.participant,
+          description: campData.description
+        }
+      }
+      const result = await campsCollection.updateOne(query, updateDoc)
+      res.send(result)
     })
 
-
-      //   app.patch('/participant/:id', async (req, res) => {
-      // const id = req.params.id;
-      // console.log(id);
-      // const filter = { _id: new ObjectId(id) }
-      // const updateDoc ={
-      //   $set: {
-      //     "participant": parseInt()
-          
-      //   }
-      // }
-    //  const result = await campsCollection.updateOne(filter, {$inc: {participant: 1}})
-    // res.send(result);
+    // app.put('/camp/:id', async(req,res)=>{
+    //   const id = req.params.id;
+    //   const filter = {_id: new ObjectId(id)};
+    //   const camp = req.body;
+    //   const options = { upsert: true };
+    //   const updateDoc= {
+    //     $set: {
+    //       ...camp
+    //     },
+    //   };
+    //   const result = await campsCollection.updateOne(filter, updateDoc, options);
+    //   res.send(result); 
     // })
+
+
+    app.patch('/participant/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+    
+      // Use the $inc operator to increment the participant field by 1
+      const updateDoc = { $inc: { participant: 1 } };
+    
+      try {
+        const result = await campsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: 'An error occurred while updating the participant count.' });
+      }
+    });
+
 
     // registration related api 
     app.post('/register', async(req,res)=>{
