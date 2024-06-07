@@ -41,7 +41,7 @@ async function run() {
     const feedbackCollection = client.db('campsDB').collection('feedback');
     const paymentCollection = client.db('campsDB').collection('payments');
 
-        //jwt related api
+    //jwt related api
     app.post('/jwt', async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
@@ -62,17 +62,17 @@ async function run() {
         next();
       })
     }
-    
+
 
     //user role entry related api
-  app.post('/user', async (req, res) => {
+    app.put('/user', async (req, res) => {
       const user = req.body
 
       const query = { email: user?.email }
       // check if user already exists in db
       const isExist = await usersCollection.findOne(query)
       if (isExist) {
-          return res.send(isExist)
+        return res.send(isExist)
       }
 
       // save new user 
@@ -83,7 +83,7 @@ async function run() {
         },
       }
       const result = await usersCollection.updateOne(query, updateDoc, options)
-     
+
       res.send(result)
     })
 
@@ -93,14 +93,21 @@ async function run() {
       res.send(result)
     })
 
+
+    //camp data
     app.get('/camps', async (req, res) => {
       const search = req.query.search || '';
       const sort = req.query.sort || '';
       const query = search ? { campName: { $regex: search, $options: 'i' } } : {};
-    
+
       let sortOption = {};
-      if (sort) {
-        sortOption[sort] = 1; 
+      if (sort && sort === 'campName') {
+        sortOption['campName'] = 1;
+        const result = await campsCollection.find(query).sort(sortOption).toArray();
+        return res.send(result);
+      }
+      else if (sort) {
+        sortOption[sort] = -1;
       }
       try {
         const result = await campsCollection.find(query).sort(sortOption).toArray();
@@ -110,33 +117,34 @@ async function run() {
       }
     });
 
-    app.get('/popular-camps', async(req,res)=>{
+    app.get('/popular-camps', async (req, res) => {
       const options = {
-        // Sort returned documents in ascending order by title (A->Z)
-        sort: { participant: 1 },
+        sort: { participant: -1 },
       };
-      const result = await campsCollection.find({}, options).toArray();
-      res.send(result)
+      const result = await campsCollection.find({},options).toArray();
+      return res.send(result);
     })
 
-    app.get('/camp/:id', async(req,res)=>{
+    app.get('/camp/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await campsCollection.findOne(query);
       res.send(result)
     })
-  
-    app.post('/camps', async(req,res)=>{
+
+
+
+    app.post('/camps', async (req, res) => {
       const camp = req.body;
       const result = await campsCollection.insertOne(camp);
-      res.send(result); 
+      res.send(result);
     })
 
-    app.delete('/camp/:id', async(req,res)=>{
+    app.delete('/camp/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await campsCollection.deleteOne(query);
-      res.send(result); 
+      res.send(result);
     })
 
     app.put('/camp/update/:id', async (req, res) => {
@@ -165,49 +173,60 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const participantValue = req.body;
-      console.log(participantValue.participantCount)
-      const updateDoc= {
-            $set: {
-               participant: participantValue.participantCount,
-             },
-            }
-   
-        const result = await campsCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      
+      const updateDoc = {
+        $set: {
+          participant: participantValue.participantCount,
+        },
+      }
+
+      const result = await campsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+
     })
 
     // registration related api 
-    app.post('/register', async(req,res)=>{
+    app.post('/register', async (req, res) => {
       const registrationData = req.body;
       const result = await registrationsCollection.insertOne(registrationData);
       res.send(result);
     })
 
-     app.get('/register', async(req,res)=>{
+    app.get('/register', async (req, res) => {
       const email = req.query.email;
       let query = {};
-      if(email){
-        query = {participantEmail: email}
+      if (email) {
+        query = { participantEmail: email }
       }
       const result = await registrationsCollection.find(query).toArray();
-      res.send(result); 
+      res.send(result);
     })
-     app.get('/registers', async(req,res)=>{
+    app.get('/registers', async (req, res) => {
       const email = req.query.email;
       let query = {};
-      if(email){
-        query = {organizerEmail: email}
+      if (email) {
+        query = { organizerEmail: email }
       }
       const result = await registrationsCollection.find(query).toArray();
-      res.send(result); 
+      res.send(result);
     })
 
-     app.get('/register/:id', async(req,res)=>{
+    //chart data
+    app.get('/campschart/:email', async (req, res) => {
+      const email = req.params.email
+      const query = { participantEmail: email }
+
+      const options = {
+        projection: {_id:0, fees: 1, campName: 1 },
+      };
+      const result = await registrationsCollection.find(query, options).toArray();
+      res.send(result)
+    })
+
+    app.get('/register/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await registrationsCollection.findOne(query);
-      res.send(result); 
+      res.send(result);
     })
 
 
@@ -216,44 +235,44 @@ async function run() {
       const paymentStatus = req.body.paymentStatus;
       const query = { _id: new ObjectId(id) }
       const status = req.body.status;
-      if(paymentStatus){
+      if (paymentStatus) {
         const updateDoc = {
-          $set: { 
+          $set: {
             paymentStatus: paymentStatus,
           },
         }
         const result = await registrationsCollection.updateOne(query, updateDoc)
         res.send(result)
       }
-    else{
-      const updateDoc = {
-        $set: { 
-          status: status,
-        },
-      } 
-      const result = await registrationsCollection.updateOne(query, updateDoc)
-      res.send(result)
-    }
-  })
-
-    app.delete('/register/:id', async(req,res)=>{
-      const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
-      const result = await registrationsCollection.deleteOne(query);
-      res.send(result); 
+      else {
+        const updateDoc = {
+          $set: {
+            status: status,
+          },
+        }
+        const result = await registrationsCollection.updateOne(query, updateDoc)
+        res.send(result)
+      }
     })
-    
+
+    app.delete('/register/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await registrationsCollection.deleteOne(query);
+      res.send(result);
+    })
+
 
     // feedback related api 
-    app.get('/feedback', async(req,res)=>{
+    app.get('/feedback', async (req, res) => {
       const result = await feedbackCollection.find().toArray();
       res.send(result)
     })
 
-    app.post('/feedback', async(req,res)=>{
+    app.post('/feedback', async (req, res) => {
       const feedback = req.body;
       const result = await feedbackCollection.insertOne(feedback);
-      res.send(result); 
+      res.send(result);
     })
 
     //payment related data
@@ -280,7 +299,7 @@ async function run() {
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
     })
-   
+
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
@@ -293,13 +312,13 @@ async function run() {
       const status = req.body.status;
       const query = { registerId: id }
       const updateDoc = {
-        $set: { 
+        $set: {
           status: status,
         },
-      } 
+      }
       const result = await paymentCollection.updateOne(query, updateDoc)
       res.send(result)
-  })
+    })
 
 
     // Send a ping to confirm a successful connection
