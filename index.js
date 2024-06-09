@@ -324,7 +324,7 @@ async function run() {
 
 
        //pagination and search organizer registrer camps api
-   app.get('/registers', async(req,res)=>{
+   app.get('/registers-organizer', async(req,res)=>{
     const search = req.query.search;
     const email = req.query.email;
     const page = parseInt(req.query.page);
@@ -349,7 +349,7 @@ async function run() {
     res.send(result)
   })
 
-  app.get('/campscount', async (req, res) => {
+  app.get('/campscount-organizer', async (req, res) => {
     const search = req.query.search;
     const email = req.query.email;
     let query = {};
