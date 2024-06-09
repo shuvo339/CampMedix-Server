@@ -132,7 +132,47 @@ async function run() {
       res.send(result)
     })
 
+       //pagination and search camps api
+       app.get('/manage-camps', async(req,res)=>{
+        const search = req.query.search;
+        const email = req.query.email;
+        const page = parseInt(req.query.page);
+        let newpage=0;
+        if(page===0){
+         newpage = page;
+        }else{
+         newpage=page-1;
+        }
+        const size = parseInt(req.query.size);
+        let query = {};
+        if (email) {
+          query.email = email;
+        }
+        if (search) {
+          query.campName = { $regex: search, $options: 'i' };
+        }
+         const result = await campsCollection.find(query)
+        .skip(newpage*size)
+        .limit(size)
+        .toArray();
+        res.send(result)
+      })
 
+      app.get('/campscount-camps', async (req, res) => {
+        const search = req.query.search;
+        const email = req.query.email;
+        let query = {};
+        if (email) {
+          query.email = email;
+        }
+        if (search) {
+          query.campName = { $regex: search, $options: 'i' };
+        }
+        const count = await campsCollection.countDocuments(query);
+        res.send({count})
+      })
+    
+    
 
     app.post('/camps', async (req, res) => {
       const camp = req.body;
@@ -169,6 +209,7 @@ async function run() {
     })
 
 
+
     app.patch('/participant/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -200,15 +241,128 @@ async function run() {
       const result = await registrationsCollection.find(query).toArray();
       res.send(result);
     })
-    app.get('/registers', async (req, res) => {
-      const email = req.query.email;
-      let query = {};
-      if (email) {
-        query = { organizerEmail: email }
-      }
-      const result = await registrationsCollection.find(query).toArray();
-      res.send(result);
-    })
+    
+     //pagination and search participant registered camps api
+   app.get('/registers', async(req,res)=>{
+    const search = req.query.search;
+    const email = req.query.email;
+    const page = parseInt(req.query.page);
+    let newpage=0;
+    if(page===0){
+     newpage = page;
+    }else{
+     newpage=page-1;
+    }
+    const size = parseInt(req.query.size);
+    let query = {};
+    if (email) {
+      query.participantEmail = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+     const result = await registrationsCollection.find(query)
+    .skip(newpage*size)
+    .limit(size)
+    .toArray();
+    res.send(result)
+  })
+
+  app.get('/campscount-register', async (req, res) => {
+    const search = req.query.search;
+    let query = {
+      campName: { $regex: search, $options: 'i' },
+    }
+    const count = await registrationsCollection.countDocuments(query);
+    res.send({count})
+  })
+
+
+
+
+        //pagination and search organizer registrer camps api
+   app.get('/registers-participant', async(req,res)=>{
+    const search = req.query.search;
+    const email = req.query.email;
+    const page = parseInt(req.query.page);
+    let newpage=0;
+    if(page===0){
+     newpage = page;
+    }else{
+     newpage=page-1;
+    }
+    const size = parseInt(req.query.size);
+    let query = {};
+    if (email) {
+      query.participantEmail = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+     const result = await registrationsCollection.find(query)
+    .skip(newpage*size)
+    .limit(size)
+    .toArray();
+    res.send(result)
+  })
+
+  app.get('/campscount-register', async (req, res) => {
+    const search = req.query.search;
+    const email = req.query.email;
+    let query = {};
+    if (email) {
+      query.participantEmail = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+    const count = await registrationsCollection.countDocuments(query);
+    res.send({count})
+  })
+
+
+
+
+       //pagination and search organizer registrer camps api
+   app.get('/registers', async(req,res)=>{
+    const search = req.query.search;
+    const email = req.query.email;
+    const page = parseInt(req.query.page);
+    let newpage=0;
+    if(page===0){
+     newpage = page;
+    }else{
+     newpage=page-1;
+    }
+    const size = parseInt(req.query.size);
+    let query = {};
+    if (email) {
+      query.organizerEmail = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+     const result = await registrationsCollection.find(query)
+    .skip(newpage*size)
+    .limit(size)
+    .toArray();
+    res.send(result)
+  })
+
+  app.get('/campscount', async (req, res) => {
+    const search = req.query.search;
+    const email = req.query.email;
+    let query = {};
+    if (email) {
+      query.organizerEmail = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+    const count = await registrationsCollection.countDocuments(query);
+    res.send({count})
+  })
+
 
     //chart data
     app.get('/campschart/:email', async (req, res) => {
