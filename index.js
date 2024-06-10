@@ -307,9 +307,6 @@ async function run() {
     res.send({count})
   })
 
-
-
-
        //pagination and search organizer registrer camps api
    app.get('/registers-organizer', verifyToken, verifyOrganizer, async(req,res)=>{
     const search = req.query.search;
@@ -476,15 +473,6 @@ async function run() {
     const count = await paymentCollection.countDocuments(query);
     res.send({count})
   })
-
-    // app.get('/payments/:email', verifyToken, verifyParticipant, async (req, res) => {
-    //   const query = { email: req.params.email }
-    //   if (req.params.email !== req.decoded.email) {
-    //     return res.status(403).send({ message: 'forbidden access' });
-    //   }
-    //   const result = await paymentCollection.find(query).toArray();
-    //   res.send(result);
-    // })
 
     app.post('/payments', async (req, res) => {
       const payment = req.body;
