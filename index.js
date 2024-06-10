@@ -19,6 +19,7 @@ app.use(
 );
 app.use(express.json());
 
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.v8mpgvp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -41,13 +42,6 @@ async function run() {
     const feedbackCollection = client.db('campsDB').collection('feedback');
     const paymentCollection = client.db('campsDB').collection('payments');
 
-    //jwt related api
-    app.post('/jwt', async (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-      res.send({ token })
-    })
-
     // middlewares 
     const verifyToken = (req, res, next) => {
       if (!req.headers.authorization) {
@@ -63,6 +57,38 @@ async function run() {
       })
     }
 
+    // use verify organizer after verifyToken
+    const verifyOrganizer = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isOrganizer = user?.role === 'organizer';
+      if (!isOrganizer) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
+
+    // use verify organizer after verifyToken
+    const verifyParticipant = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isPartcipant = user?.role === 'participant';
+      if (!isPartcipant) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
+
+    
+
+    //jwt related api
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+      res.send({ token })
+    })
 
     //user role entry related api
     app.put('/user', async (req, res) => {
@@ -133,7 +159,7 @@ async function run() {
     })
 
        //pagination and search camps api
-       app.get('/manage-camps', async(req,res)=>{
+       app.get('/manage-camps', verifyToken, verifyOrganizer, async(req,res)=>{
         const search = req.query.search;
         const email = req.query.email;
         const page = parseInt(req.query.page);
@@ -208,8 +234,6 @@ async function run() {
       res.send(result)
     })
 
-
-
     app.patch('/participant/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -242,46 +266,9 @@ async function run() {
       res.send(result);
     })
     
-     //pagination and search participant registered camps api
-   app.get('/registers', async(req,res)=>{
-    const search = req.query.search;
-    const email = req.query.email;
-    const page = parseInt(req.query.page);
-    let newpage=0;
-    if(page===0){
-     newpage = page;
-    }else{
-     newpage=page-1;
-    }
-    const size = parseInt(req.query.size);
-    let query = {};
-    if (email) {
-      query.participantEmail = email;
-    }
-    if (search) {
-      query.campName = { $regex: search, $options: 'i' };
-    }
-     const result = await registrationsCollection.find(query)
-    .skip(newpage*size)
-    .limit(size)
-    .toArray();
-    res.send(result)
-  })
-
-  app.get('/campscount-register', async (req, res) => {
-    const search = req.query.search;
-    let query = {
-      campName: { $regex: search, $options: 'i' },
-    }
-    const count = await registrationsCollection.countDocuments(query);
-    res.send({count})
-  })
-
-
-
-
-        //pagination and search organizer registrer camps api
-   app.get('/registers-participant', async(req,res)=>{
+ 
+    //pagination and search participant registered camps api
+   app.get('/registers-participant', verifyToken, verifyParticipant, async(req,res)=>{
     const search = req.query.search;
     const email = req.query.email;
     const page = parseInt(req.query.page);
@@ -324,7 +311,7 @@ async function run() {
 
 
        //pagination and search organizer registrer camps api
-   app.get('/registers-organizer', async(req,res)=>{
+   app.get('/registers-organizer', verifyToken, verifyOrganizer, async(req,res)=>{
     const search = req.query.search;
     const email = req.query.email;
     const page = parseInt(req.query.page);
@@ -365,7 +352,7 @@ async function run() {
 
 
     //chart data
-    app.get('/campschart/:email', async (req, res) => {
+    app.get('/campschart/:email', verifyToken, verifyParticipant, async (req, res) => {
       const email = req.params.email
       const query = { participantEmail: email }
 
@@ -445,14 +432,59 @@ async function run() {
       })
     });
 
-    app.get('/payments/:email', verifyToken, async (req, res) => {
-      const query = { email: req.params.email }
-      if (req.params.email !== req.decoded.email) {
+    //pagination and search payment history api
+   app.get('/payments/:email', verifyToken, verifyParticipant, async(req,res)=>{
+    const email =req.params.email;
+    let query = {};
+    query = { email: email }
+      if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' });
       }
-      const result = await paymentCollection.find(query).toArray();
-      res.send(result);
-    })
+    const search = req.query.search;
+    const page = parseInt(req.query.page);
+    let newpage=0;
+    if(page===0){
+     newpage = page;
+    }else{
+     newpage=page-1;
+    }
+    const size = parseInt(req.query.size);
+    
+    if (email) {
+      query.email = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+     const result = await paymentCollection.find(query)
+    .skip(newpage*size)
+    .limit(size)
+    .toArray();
+    res.send(result)
+  })
+
+  app.get('/campscount-payment', async (req, res) => {
+    const search = req.query.search;
+    const email = req.query.email;
+    let query = {};
+    if (email) {
+      query.email = email;
+    }
+    if (search) {
+      query.campName = { $regex: search, $options: 'i' };
+    }
+    const count = await paymentCollection.countDocuments(query);
+    res.send({count})
+  })
+
+    // app.get('/payments/:email', verifyToken, verifyParticipant, async (req, res) => {
+    //   const query = { email: req.params.email }
+    //   if (req.params.email !== req.decoded.email) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+    //   const result = await paymentCollection.find(query).toArray();
+    //   res.send(result);
+    // })
 
     app.post('/payments', async (req, res) => {
       const payment = req.body;
